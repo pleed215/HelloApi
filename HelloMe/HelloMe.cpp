@@ -12,10 +12,11 @@ LPCTSTR ChildClassName = L"ChildWin";
 
 
 #define ID_BTN_START 1001
-#define ID_BTN_HIGHSCORE 1002
-#define IDT_TIMER1 1003
+#define ID_BTN_HELP 1002
+#define ID_BTN_HIGHSCORE 1003
+#define IDT_TIMER1 1004
 
-#define BOARD_SIZE 60
+#define BOARD_SIZE 40
 #define DIR_E 1
 #define DIR_S 2
 #define DIR_W 3
@@ -24,7 +25,7 @@ LPCTSTR ChildClassName = L"ChildWin";
 #define RESULT_FOOD 2
 #define RESULT_WALL 3
 #define RESULT_SELF 4
-#define CELL_SIZE 10
+#define CELL_SIZE 14
 #define INIT_LENGTH 3
 #define GAME_STATE_STOP 0
 #define GAME_STATE_PLAYING 1
@@ -43,6 +44,8 @@ int length = 3;
 int speed = 1;
 int direction = DIR_E;
 int gameState = GAME_STATE_STOP;
+int highscore = 0;
+BOOL changingDirection = FALSE;
 const int CONTENT_HEIGHT = 100;
 const int WINDOW_WIDTH = CELL_SIZE * BOARD_SIZE + 40;
 const int WINDOW_HEIGHT = CELL_SIZE * BOARD_SIZE + CONTENT_HEIGHT + 100;
@@ -50,7 +53,6 @@ const int START_X = 10;
 const int START_Y = CONTENT_HEIGHT;
 
 void initBoard();
-void gameLoop();
 void renderBoard(HDC);
 int updateBoard();
 void changeDir(int dir);
@@ -58,6 +60,7 @@ void generateFood();
 void gainFood();
 BOOL isFoodPositionOK();
 void drawCell(HDC, Position&);
+void renderScore(HDC);
 
 // Utils
 int rangeRandom(int begin, int end); // end는 포함안함.
@@ -117,6 +120,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		TextOut(hdc, 10, 10, text, lstrlen(text));
+		renderScore(hdc);
 		renderBoard(hdc);
 		EndPaint(hWnd, &ps);
 		return 0;
@@ -125,12 +129,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 	{
 		HWND hChildWnd = CreateWindow(
 			ChildClassName,     		// 차일드 윈도우 클래스 이름 
-			L"차일드 윈도우",            	// 윈도우 타이틀 
-			WS_OVERLAPPEDWINDOW | WS_CHILD,  // 윈도우  스타일 
-			150,       		// 윈도우 보일 때 x 좌표 
-			150,       		// 윈도우 보일 때 y 좌표 
-			600,       		// 윈도우 폭
-			600,       		// 윈도우 높이
+			L"스네이크 게임",            	// 윈도우 타이틀 
+			WS_CAPTION|WS_BORDER | WS_CHILD,  // 윈도우  스타일 
+			320,       		// 윈도우 보일 때 x 좌표 
+			10,       		// 윈도우 보일 때 y 좌표 
+			250,       		// 윈도우 폭
+			80,       		// 윈도우 높이
 			hWnd,         		// 부모 윈도우
 			(HMENU)1000,        	// 차일드 윈도우ID 
 			g_hInst,           		// 인스턴스 핸들 
@@ -146,19 +150,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 			(HMENU)ID_BTN_START,
 			g_hInst,
 			(LPVOID)NULL);
-		CreateWindow(
-			L"button",
-			L"하이스코어",
-			WS_CHILD | WS_VISIBLE,
-			320, 10, 100, 30,
-			hWnd,
-			(HMENU)ID_BTN_HIGHSCORE,
-			g_hInst,
-			(LPVOID)NULL);
-
-		long seed = time(NULL);
+			long seed = time(NULL);
 		srand(seed);
-		//ShowWindow(hChildWnd, SW_SHOW);
+		ShowWindow(hChildWnd, SW_SHOW);
 		initBoard();
 		return 0;
 	}
@@ -167,12 +161,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 			initBoard();
 			gameState = GAME_STATE_PLAYING;
 			SetFocus(hWnd);
-			SetTimer(hWnd, IDT_TIMER1, 100, (TIMERPROC)NULL);
+			SetTimer(hWnd, IDT_TIMER1, 80, (TIMERPROC)NULL);
 		}
 		return 0;
 
 	case WM_KEYDOWN:
-		if (gameState == GAME_STATE_PLAYING) {
+		if (gameState == GAME_STATE_PLAYING&&!changingDirection) {
+			changingDirection = TRUE;
 			switch (wParam) {
 			case VK_UP:
 				changeDir(DIR_N);
@@ -202,6 +197,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 					if (result == RESULT_WALL || result == RESULT_SELF) {
 						KillTimer(hWnd, IDT_TIMER1);
 						gameState = GAME_STATE_END;
+						highscore = max(highscore, score);
+						RECT scoreRect = {
+							10, 50, 350, 70
+						};
+						InvalidateRect(hWnd, &scoreRect, TRUE);
 						MessageBox(hWnd, L"충돌감지", L"게임종료", MB_OK | MB_ICONERROR);
 					}
 					else if (result == RESULT_FOOD) {
@@ -222,17 +222,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 }
 LRESULT CALLBACK ChildWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	LPCTSTR text = L"이은덕 202234-243458";
 	switch (message)
 	{
+	case WM_CREATE:
+		CreateWindow(L"button", L"도움말", WS_CHILD | WS_VISIBLE, 10, 1, 100, 35, hWnd, (HMENU)ID_BTN_HELP, g_hInst, NULL);
+		CreateWindow(L"button", L"하이스코어", WS_CHILD | WS_VISIBLE, 120, 1, 100, 35, hWnd, (HMENU)ID_BTN_HIGHSCORE, g_hInst, NULL);
+		return 0;
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		TextOut(hdc, 10, 10, text, lstrlen(text));
 		EndPaint(hWnd, &ps);
 		return 0;
 	}
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case ID_BTN_HELP:
+			MessageBox(hWnd, L"방향키 사용. (치트) space", L"스네이크 게임", MB_OK | MB_ICONASTERISK);
+			break;
+		case ID_BTN_HIGHSCORE:
+			TCHAR s[100];
+			wsprintf(s, L"하이스코어: %5d", highscore*100);
+			MessageBox(hWnd, s, L"스네이크 게임", MB_OK | MB_ICONINFORMATION);
+			break;
+		}
+		return 0;
 
 	}
 
@@ -322,6 +336,7 @@ int updateBoard() {
 		default:
 			break;
 	}
+	changingDirection = FALSE;
 
 	if (snakeData[0].x >= BOARD_SIZE || snakeData[0].x < 0 || snakeData[0].y >= BOARD_SIZE || snakeData[0].y < 0) {
 		return RESULT_WALL;
@@ -352,8 +367,18 @@ void generateFood() {
 }
 
 void gainFood() {
+	RECT scoreRect = {
+		10, 50, 350, 70
+	};
 	generateFood();
 	score += 1;
+	InvalidateRect(g_hMain, &scoreRect, TRUE);
+}
+
+void renderScore(HDC hdc) {
+	TCHAR scoreStr[100];
+	wsprintf(scoreStr, L"Score: %7d, highscore: %7d", score*100, highscore*100);
+	TextOut(hdc, 10, 50, scoreStr, lstrlen(scoreStr));
 }
 
 BOOL isFoodPositionOK() {

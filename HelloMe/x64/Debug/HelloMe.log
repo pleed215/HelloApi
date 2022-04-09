@@ -1,5 +1,5 @@
 ﻿  HelloMe.cpp
-C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(107,16): warning C4244: 'return': 'WPARAM'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(159,13): warning C4244: '초기화 중': 'time_t'에서 'long'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(255,18): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(110,16): warning C4244: 'return': 'WPARAM'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(153,14): warning C4244: '초기화 중': 'time_t'에서 'long'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\pleed\mystudy\vsc\HelloApi\HelloMe\HelloMe.cpp(269,18): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   HelloMe.vcxproj -> C:\Users\pleed\mystudy\vsc\HelloApi\x64\Debug\HelloMe.exe
