@@ -1,3 +1,5 @@
+// https://github.com/pleed215/HelloApi
+
 #include <windows.h>
 #include <math.h>
 #include <time.h>
@@ -11,11 +13,14 @@ LPCTSTR lpszClass = L"HelloAPI";
 LPCTSTR ChildClassName = L"ChildWin";
 
 
-#define ID_BTN_START 1001
-#define ID_BTN_HELP 1002
-#define ID_BTN_HIGHSCORE 1003
-#define IDT_TIMER1 1004
+// 리소스 관련 ID
+#define ID_BTN_START 1001 // 시작 버튼
+#define ID_BTN_HELP 1002 // 도움말 버튼.
+#define ID_BTN_HIGHSCORE 1003 // 최고 점수 확인.
+#define IDT_TIMER1 1004 // 타이머 관련 id
 
+
+// 게임 로직 관련된 선언들.
 #define BOARD_SIZE 40
 #define DIR_E 1
 #define DIR_S 2
@@ -31,14 +36,16 @@ LPCTSTR ChildClassName = L"ChildWin";
 #define GAME_STATE_PLAYING 1
 #define GAME_STATE_END 2
 
+
+// 게임 보드 index position.
 typedef struct {
 	int x, y;
 } Position;
 
-const int MAX_SCORE = BOARD_SIZE * 3;
-int gameBoard[BOARD_SIZE][BOARD_SIZE];
-Position snakeData[MAX_SCORE+3];
-Position foodData;
+const int MAX_SCORE = BOARD_SIZE * 20; // max score. 하지만 max score 로직은 짜놓지 않음.
+int gameBoard[BOARD_SIZE][BOARD_SIZE];// 실제 게임에서 사용할 보드.
+Position snakeData[MAX_SCORE+3];// 뱜 데이터
+Position foodData; // 먹이 위치 저장
 int score = 0;
 int length = 3;
 int speed = 1;
@@ -52,6 +59,7 @@ const int WINDOW_HEIGHT = CELL_SIZE * BOARD_SIZE + CONTENT_HEIGHT + 100;
 const int START_X = 10;
 const int START_Y = CONTENT_HEIGHT;
 
+// 함수 선언.
 void initBoard();
 void renderBoard(HDC);
 int updateBoard();
@@ -63,6 +71,7 @@ void drawCell(HDC, Position&);
 void renderScore(HDC);
 
 // Utils
+// 유틸함수. 선언... 은 랜덤밖에..
 int rangeRandom(int begin, int end); // end는 포함안함.
 
 
@@ -254,9 +263,10 @@ LRESULT CALLBACK ChildWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 }
 
 /*****************************************************************************/
-/* Game Code                                                                 */
+/* 게임 코드                                                                 */
 /*****************************************************************************/
 
+// 보드 초기화
 void initBoard() {
 	for (int i = 0; i < BOARD_SIZE; i++) {
 		for (int j = 0; j < BOARD_SIZE; j++) {
@@ -381,6 +391,8 @@ void renderScore(HDC hdc) {
 	TextOut(hdc, 10, 50, scoreStr, lstrlen(scoreStr));
 }
 
+
+// 혹시나 푸드가 스네이크 위에 있으면 안되니까.. 확인 차원에서..
 BOOL isFoodPositionOK() {
 	for (int i = 0; i < score + INIT_LENGTH; i++) {
 		if (snakeData[i].x == foodData.x && snakeData[i].y == foodData.y) {
@@ -390,6 +402,8 @@ BOOL isFoodPositionOK() {
 	return TRUE;
 }
 
+
+// 방향 전환. 반대 방향은 안댐.
 void changeDir(int dir) {
 	if ((direction == DIR_E && dir == DIR_W) ||
 		(direction == DIR_W && dir == DIR_E) ||
@@ -399,7 +413,7 @@ void changeDir(int dir) {
 	} 
 	direction = dir;
 }
-
+// 유틸함수.. 범위에 해당하는 난수 정수 발생.
 int rangeRandom(int begin, int end) {
 	return begin + (int)floor(rand() % (end-begin-1));
 }
