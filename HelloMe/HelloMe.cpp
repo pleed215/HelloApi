@@ -43,7 +43,6 @@ typedef struct {
 } Position;
 
 const int MAX_SCORE = BOARD_SIZE * 20; // max score. 하지만 max score 로직은 짜놓지 않음.
-int gameBoard[BOARD_SIZE][BOARD_SIZE];// 실제 게임에서 사용할 보드.
 Position snakeData[MAX_SCORE+3];// 뱜 데이터
 Position foodData; // 먹이 위치 저장
 int score = 0;
@@ -59,7 +58,7 @@ const int WINDOW_HEIGHT = CELL_SIZE * BOARD_SIZE + CONTENT_HEIGHT + 100;
 const int START_X = 10;
 const int START_Y = CONTENT_HEIGHT;
 
-// 함수 선언.
+// 함수 프로토타입 선언.
 void initBoard();
 void renderBoard(HDC);
 int updateBoard();
@@ -69,6 +68,7 @@ void gainFood();
 BOOL isFoodPositionOK();
 void drawCell(HDC, Position&);
 void renderScore(HDC);
+void invalidateScore();
 
 // Utils
 // 유틸함수. 선언... 은 랜덤밖에..
@@ -168,6 +168,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 	case WM_COMMAND:
 		if (LOWORD(wParam) == ID_BTN_START) {
 			initBoard();
+			invalidateScore();
 			gameState = GAME_STATE_PLAYING;
 			SetFocus(hWnd);
 			SetTimer(hWnd, IDT_TIMER1, 80, (TIMERPROC)NULL);
@@ -207,19 +208,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage,
 						KillTimer(hWnd, IDT_TIMER1);
 						gameState = GAME_STATE_END;
 						highscore = max(highscore, score);
-						RECT scoreRect = {
-							10, 50, 350, 70
-						};
-						InvalidateRect(hWnd, &scoreRect, TRUE);
+						invalidateScore();
 						MessageBox(hWnd, L"충돌감지", L"게임종료", MB_OK | MB_ICONERROR);
 					}
 					else if (result == RESULT_FOOD) {
 						gainFood();
 					}
 				}
-				
 				break;
-
 		}
 		return 0;
 	case WM_DESTROY:
@@ -268,11 +264,6 @@ LRESULT CALLBACK ChildWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 // 보드 초기화
 void initBoard() {
-	for (int i = 0; i < BOARD_SIZE; i++) {
-		for (int j = 0; j < BOARD_SIZE; j++) {
-			gameBoard[i][j] = 0;
-		}
-	}
 	score = 0;
 	gameState = GAME_STATE_STOP;
 	direction = DIR_E;
@@ -348,10 +339,12 @@ int updateBoard() {
 	}
 	changingDirection = FALSE;
 
+	// 벽과 충돌 체크
 	if (snakeData[0].x >= BOARD_SIZE || snakeData[0].x < 0 || snakeData[0].y >= BOARD_SIZE || snakeData[0].y < 0) {
 		return RESULT_WALL;
 	}
 
+	// 자기 자신을 먹는지 체크
 	for (int i = 0; i < score + INIT_LENGTH - 1; i++) {
 		for (int j = i + 1; j < score + INIT_LENGTH; j++) {
 			if (snakeData[i].x == snakeData[j].x && snakeData[i].y == snakeData[j].y) {
@@ -360,11 +353,14 @@ int updateBoard() {
 		}
 	}
 
+	// 음식을 먹었는지 체크
 	if (snakeData[0].x == foodData.x && snakeData[0].y == foodData.y) {
 		return RESULT_FOOD;
 	}
 
+	// 보드 재렌더링.
 	InvalidateRect(g_hMain, &boardRect, TRUE);
+	// 아무일 없음
 	return RESULT_OK;
 }
 
@@ -377,12 +373,9 @@ void generateFood() {
 }
 
 void gainFood() {
-	RECT scoreRect = {
-		10, 50, 350, 70
-	};
 	generateFood();
 	score += 1;
-	InvalidateRect(g_hMain, &scoreRect, TRUE);
+	invalidateScore();
 }
 
 void renderScore(HDC hdc) {
@@ -412,6 +405,12 @@ void changeDir(int dir) {
 		return;
 	} 
 	direction = dir;
+}
+void invalidateScore() {
+	RECT scoreRect = {
+		10, 50, 350, 70
+	};
+	InvalidateRect(g_hMain, &scoreRect, TRUE);
 }
 // 유틸함수.. 범위에 해당하는 난수 정수 발생.
 int rangeRandom(int begin, int end) {
